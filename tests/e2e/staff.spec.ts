@@ -3,7 +3,12 @@ import { PASSWORD, registerWithOrganization } from './helpers'
 
 test('onboarding, departments and the employee lifecycle', async ({ page }) => {
   const { basePath } = await registerWithOrganization(page, 'Kordon Bistro')
-  await expect(page.getByText('İşletme sahibi')).toBeVisible()
+  await expect(page.getByText('Owner', { exact: true })).toBeVisible()
+
+  // Dashboard checklist reflects real data.
+  const steps = page.getByTestId('setup-steps')
+  await expect(page.getByText('0/3 tamamlandı')).toBeVisible()
+  await expect(steps.locator('[data-step="departments"]')).toHaveAttribute('data-done', 'false')
 
   // Department
   await page.goto(`${basePath}/departmanlar`)
@@ -11,6 +16,10 @@ test('onboarding, departments and the employee lifecycle', async ({ page }) => {
   await page.getByLabel('Departman adı').fill('Salon')
   await page.getByRole('button', { name: 'Kaydet' }).click()
   await expect(page.getByText('Salon', { exact: true })).toBeVisible()
+  await page.goto(basePath)
+  await expect(page.getByTestId('setup-steps').locator('[data-step="departments"]')).toHaveAttribute('data-done', 'true')
+  await expect(page.getByText('1 departman')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Departman ekle' })).toHaveCount(0)
 
   // Employee
   await page.goto(`${basePath}/personel`)
@@ -92,7 +101,7 @@ test('manager invitation is limited to the selected location', async ({ page, br
   await expect(manager.getByRole('link', { name: /Ece Örnek/ })).toHaveCount(0)
   await expect(manager.getByLabel('Şube').locator('option')).toHaveText(['Bornova'])
   await manager.goto(`${basePath}/departmanlar`)
-  await expect(manager.getByText('Departmanları yalnızca işletme sahibi düzenleyebilir.')).toBeVisible()
+  await expect(manager.getByText('Departmanları yalnızca Owner düzenleyebilir.')).toBeVisible()
   await expect(manager.getByRole('button', { name: 'Departman ekle' })).toHaveCount(0)
 
   // The link is single-use.
@@ -102,6 +111,10 @@ test('manager invitation is limited to the selected location', async ({ page, br
 
   await page.reload()
   await expect(page.getByText('Kabul edildi')).toBeVisible()
+
+  // Departments are still missing, so setup is 2/3; a manager sees only the staff step (done).
+  await page.goto(basePath)
+  await expect(page.getByText('2/3 tamamlandı')).toBeVisible()
 })
 
 test('another organization’s pages are not reachable', async ({ page, browser }) => {

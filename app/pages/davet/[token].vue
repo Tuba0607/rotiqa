@@ -14,7 +14,7 @@ const signedInEmail = computed(() => session.value.data?.user.email?.toLowerCase
 
 const STATUS_MESSAGE = {
   ACCEPTED: 'Bu davet daha önce kullanılmış.',
-  EXPIRED: 'Davetin süresi dolmuş. İşletme sahibinden yeni bir davet isteyin.',
+  EXPIRED: 'Davetin süresi dolmuş. İşletmenin Owner’ından yeni bir davet isteyin.',
   REVOKED: 'Bu davet iptal edilmiş.',
 } as const
 

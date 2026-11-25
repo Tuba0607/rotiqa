@@ -122,7 +122,7 @@ async function move(index: number, delta: -1 | 1) {
     <UiEmptyState
       v-if="!activeLocations.length"
       title="Yetkili olduğunuz aktif şube yok"
-      description="İşletme sahibinden şube erişimi isteyin."
+      description="Owner’dan şube erişimi isteyin."
     />
     <UiAlert
       v-else-if="error"
@@ -143,46 +143,54 @@ async function move(index: number, delta: -1 | 1) {
       <li
         v-for="(employee, index) in employees"
         :key="employee.id"
-        class="flex items-center gap-3 px-3 py-2"
+        class="flex items-center gap-3 py-1.5 pr-1 pl-3 md:py-0.5"
+        data-testid="employee-row"
       >
         <span
-          class="h-10 w-1.5 shrink-0 rounded-full"
+          class="h-9 w-1.5 shrink-0 rounded-full md:h-7"
           :style="{ backgroundColor: employee.department?.color ?? '#E7E3DA' }"
           aria-hidden="true"
         />
         <NuxtLink
           :to="orgPath(`/personel/${employee.id}`)"
-          class="flex min-h-touch min-w-0 flex-1 flex-col justify-center"
+          class="flex min-h-touch min-w-0 flex-1 flex-col justify-center gap-0.5 rounded-lg md:flex-row md:items-center md:justify-start md:gap-3"
         >
           <span class="truncate font-semibold">{{ employee.firstName }} {{ employee.lastName }}</span>
           <span
             v-if="employee.department"
-            class="mt-0.5 w-fit rounded px-1.5 text-xs font-semibold"
+            class="w-fit shrink-0 rounded px-1.5 text-xs leading-5 font-semibold"
             :style="{ backgroundColor: employee.department.color, color: readableTextColor(employee.department.color) }"
           >{{ employee.department.name }}</span>
         </NuxtLink>
-        <template v-if="status === 'active'">
-          <div class="flex">
-            <button
-              type="button"
-              class="grid size-touch place-items-center rounded-lg text-navy-500 hover:bg-cream-100 disabled:opacity-30"
-              :disabled="index === 0"
-              :aria-label="`${employee.firstName} ${employee.lastName} yukarı taşı`"
-              @click="move(index, -1)"
-            >
-              ↑
-            </button>
-            <button
-              type="button"
-              class="grid size-touch place-items-center rounded-lg text-navy-500 hover:bg-cream-100 disabled:opacity-30"
-              :disabled="index === employees.length - 1"
-              :aria-label="`${employee.firstName} ${employee.lastName} aşağı taşı`"
-              @click="move(index, 1)"
-            >
-              ↓
-            </button>
-          </div>
-        </template>
+        <div
+          v-if="status === 'active'"
+          class="flex shrink-0 items-center gap-1"
+          role="group"
+          :aria-label="`${employee.firstName} ${employee.lastName} sıralaması`"
+          data-testid="sort-controls"
+        >
+          <button
+            v-for="direction in ([-1, 1] as const)"
+            :key="direction"
+            type="button"
+            class="grid size-touch place-items-center rounded-lg text-navy-500 transition-colors hover:bg-cream-100 hover:text-navy-950 focus:outline-none focus-visible:ring-3 focus-visible:ring-brand-500/30 disabled:pointer-events-none disabled:opacity-30"
+            :disabled="direction === -1 ? index === 0 : index === employees.length - 1"
+            :aria-label="`${employee.firstName} ${employee.lastName} ${direction === -1 ? 'yukarı' : 'aşağı'} taşı`"
+            @click="move(index, direction)"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              class="size-5"
+              :class="direction === 1 ? 'rotate-180' : ''"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            ><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+          </button>
+        </div>
         <UiButton
           v-else
           variant="ghost"

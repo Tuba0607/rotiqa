@@ -2,7 +2,7 @@ export interface OrganizationOverview {
   organization: { id: string, name: string, slug: string }
   role: 'OWNER' | 'MANAGER'
   locations: { id: string, name: string, timezone: string, isActive: boolean }[]
-  stats: { activeEmployees: number, departments: number, locations: number }
+  stats: { activeEmployees: number, departments: number, locations: number, managers: number, pendingInvitations: number }
 }
 
 export interface OrganizationSummary { id: string, name: string, slug: string, role: 'OWNER' | 'MANAGER' }

@@ -69,7 +69,7 @@ async function toggleActive(department: Department) {
   <div class="flex flex-col gap-5">
     <UiPageHeader
       title="Departmanlar"
-      :description="isOwner ? 'Departman renkleri vardiya tablosunda ve paylaşılan görselde isim sütununu renklendirir.' : 'Departmanları yalnızca işletme sahibi düzenleyebilir.'"
+      :description="isOwner ? 'Departman renkleri vardiya tablosunda ve paylaşılan görselde isim sütununu renklendirir.' : 'Departmanları yalnızca Owner düzenleyebilir.'"
     >
       <template
         v-if="isOwner"

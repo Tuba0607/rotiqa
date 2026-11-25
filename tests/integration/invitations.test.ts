@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 import { AppError } from '../../server/modules/errors'
 import { runInOrganization } from '../../server/modules/tenancy/access'
+import { getOrganizationOverview } from '../../server/modules/tenancy/organizations'
 import { acceptInvitation, createInvitation, hashInvitationToken, listInvitations, previewInvitation, revokeInvitation } from '../../server/modules/tenancy/invitations'
 import { seedTwoTenants, type TwoTenants } from './fixtures'
 import { appPrisma, asApp, closeConnections, createUser, expectDbError, ownerPool, resetDatabase, type TestUser } from './helpers'
@@ -150,5 +151,24 @@ describe('listing and revoking', () => {
   it('cannot revoke another organization’s invitation', async () => {
     const created = await invite()
     await expectAppError(runInOrganization(appPrisma, t.b.owner.id, t.b.slug, ctx => revokeInvitation(ctx, created.id)), 'NOT_FOUND')
+  })
+})
+
+describe('dashboard setup stats', () => {
+  it('counts managers and pending invitations for the OWNER only', async () => {
+    await invite()
+    const owner = await asOwnerA(ctx => getOrganizationOverview(ctx))
+    expect(owner.stats).toMatchObject({ managers: 1, pendingInvitations: 1, departments: 1, activeEmployees: 2 })
+
+    const manager = await runInOrganization(appPrisma, t.managerA.id, t.a.slug, ctx => getOrganizationOverview(ctx))
+    expect(manager.stats).toMatchObject({ managers: 0, pendingInvitations: 0, activeEmployees: 1 })
+  })
+
+  it('ignores revoked and expired invitations', async () => {
+    const revoked = await invite()
+    await asOwnerA(ctx => revokeInvitation(ctx, revoked.id))
+    const expired = await invite((await createUser()).email)
+    await ownerPool.query(`UPDATE invitations SET expires_at = now() - interval '1 minute' WHERE id = $1`, [expired.id])
+    expect((await asOwnerA(ctx => getOrganizationOverview(ctx))).stats.pendingInvitations).toBe(0)
   })
 })

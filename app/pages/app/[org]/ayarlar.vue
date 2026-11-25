@@ -37,7 +37,7 @@ async function save() {
       v-if="!isOwner"
       variant="error"
     >
-      İşletme ayarlarını yalnızca işletme sahibi değiştirebilir.
+      İşletme ayarlarını yalnızca Owner değiştirebilir.
     </UiAlert>
 
     <template v-else>
@@ -114,7 +114,7 @@ async function save() {
               <span class="truncate text-xs text-navy-500">{{ member.email }}</span>
             </div>
             <UiBadge :tone="member.role === 'OWNER' ? 'success' : 'neutral'">
-              {{ member.role === 'OWNER' ? 'Sahip' : `Yönetici · ${member.locations.map(l => l.name).join(', ') || 'şube yok'}` }}
+              {{ member.role === 'OWNER' ? ROLE_LABELS.OWNER : `${ROLE_LABELS.MANAGER} · ${member.locations.map(l => l.name).join(', ') || 'şube yok'}` }}
             </UiBadge>
           </li>
         </ul>

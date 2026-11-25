@@ -36,7 +36,7 @@ export async function runInOrganization<T>(
 }
 
 export function requireOwner(ctx: OrgContext): void {
-  if (ctx.role !== 'OWNER') throw new AppError('FORBIDDEN', 'Bu işlem yalnızca işletme sahibi tarafından yapılabilir.')
+  if (ctx.role !== 'OWNER') throw new AppError('FORBIDDEN', 'Bu işlem yalnızca Owner rolüyle yapılabilir.')
 }
 
 /** Throws unless the user may work with this location (OWNER: any; MANAGER: assigned). */

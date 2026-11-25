@@ -80,7 +80,7 @@ const dateFormat = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'lo
       v-if="!isOwner"
       variant="error"
     >
-      Davetleri yalnızca işletme sahibi yönetebilir.
+      Davetleri yalnızca Owner yönetebilir.
     </UiAlert>
 
     <template v-else>

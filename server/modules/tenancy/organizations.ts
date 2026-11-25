@@ -75,12 +75,21 @@ export async function createOrganization(prisma: PrismaClient, userId: string, r
 }
 
 export async function getOrganizationOverview(ctx: OrgContext) {
-  const [locations, activeEmployees, departments] = await Promise.all([
+  const isOwner = ctx.role === 'OWNER'
+  const [locations, activeEmployees, departments, managers, pendingInvitations] = await Promise.all([
     ctx.tx.location.findMany({ where: { organizationId: ctx.organization.id }, orderBy: { createdAt: 'asc' }, select: { id: true, name: true, timezone: true, isActive: true } }),
     ctx.tx.employee.count({ where: { organizationId: ctx.organization.id, isActive: true } }),
     ctx.tx.department.count({ where: { organizationId: ctx.organization.id, isActive: true } }),
+    // Team setup progress is only relevant (and, for invitations, only visible under RLS) to the OWNER.
+    isOwner ? ctx.tx.membership.count({ where: { organizationId: ctx.organization.id, role: 'MANAGER' } }) : 0,
+    isOwner ? ctx.tx.invitation.count({ where: { organizationId: ctx.organization.id, acceptedAt: null, revokedAt: null, expiresAt: { gt: new Date() } } }) : 0,
   ])
-  return { organization: ctx.organization, role: ctx.role, locations, stats: { activeEmployees, departments, locations: locations.length } }
+  return {
+    organization: ctx.organization,
+    role: ctx.role,
+    locations,
+    stats: { activeEmployees, departments, locations: locations.length, managers, pendingInvitations },
+  }
 }
 
 export async function updateOrganization(ctx: OrgContext, rawInput: unknown) {
