@@ -22,8 +22,7 @@ const id = useId()
       :id="id"
       v-model="model"
       v-bind="$attrs"
-      class="min-h-touch w-full rounded-xl border bg-white px-3 text-base text-navy-950 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
-      :class="error ? 'border-red-600' : 'border-cream-300'"
+      :class="fieldClasses(!!error)"
       :aria-invalid="error ? true : undefined"
       :aria-describedby="error ? `${id}-error` : undefined"
     >

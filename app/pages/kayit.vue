@@ -7,6 +7,7 @@ const form = reactive({ name: '', email: '', password: '' })
 const errors = reactive<{ name?: string, email?: string, password?: string }>({})
 const error = ref('')
 const submitting = ref(false)
+const formEl = ref<HTMLFormElement>()
 
 function validate(): boolean {
   errors.name = form.name.trim() ? undefined : 'Adınızı girin.'
@@ -17,7 +18,10 @@ function validate(): boolean {
 
 async function submit() {
   error.value = ''
-  if (!validate()) return
+  if (!validate()) {
+    focusFirstInvalid(formEl.value)
+    return
+  }
   submitting.value = true
   const { error: authError } = await authClient.signUp.email({ name: form.name.trim(), email: form.email.trim(), password: form.password })
   submitting.value = false
@@ -42,6 +46,7 @@ async function submit() {
     </div>
 
     <form
+      ref="formEl"
       class="flex flex-col gap-4"
       novalidate
       @submit.prevent="submit"
@@ -80,9 +85,9 @@ async function submit() {
       <UiButton
         type="submit"
         size="lg"
-        :disabled="submitting"
+        :loading="submitting"
       >
-        {{ submitting ? 'Hesap oluşturuluyor…' : 'Kayıt ol' }}
+        Kayıt ol
       </UiButton>
     </form>
 

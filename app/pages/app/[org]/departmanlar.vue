@@ -119,7 +119,7 @@ async function toggleActive(department: Department) {
         <div class="flex gap-2">
           <UiButton
             type="submit"
-            :disabled="saving"
+            :loading="saving"
           >
             Kaydet
           </UiButton>

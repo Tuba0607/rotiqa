@@ -115,7 +115,7 @@ const dateFormat = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'lo
             <label
               v-for="location in activeLocations"
               :key="location.id"
-              class="flex min-h-touch items-center gap-3 rounded-xl border border-cream-300 bg-white px-3"
+              class="flex min-h-touch cursor-pointer items-center gap-3 rounded-xl border border-cream-300 bg-white px-3 has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-brand-500/30 has-[:checked]:border-brand-600"
             >
               <input
                 v-model="form.locationIds"
@@ -134,7 +134,7 @@ const dateFormat = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'lo
           </fieldset>
           <UiButton
             type="submit"
-            :disabled="saving"
+            :loading="saving"
           >
             Bağlantı oluştur
           </UiButton>

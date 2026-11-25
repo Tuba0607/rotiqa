@@ -110,7 +110,7 @@ async function setArchived(archived: boolean) {
         <UiButton
           class="mt-4"
           :variant="employee.isActive ? 'secondary' : 'primary'"
-          :disabled="archiving"
+          :loading="archiving"
           @click="setArchived(employee.isActive)"
         >
           {{ employee.isActive ? 'Arşivle' : 'Geri al' }}

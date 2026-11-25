@@ -99,7 +99,7 @@ async function signOut() {
           </p>
           <UiButton
             type="submit"
-            :disabled="profileState.saving"
+            :loading="profileState.saving"
           >
             Kaydet
           </UiButton>
@@ -143,7 +143,7 @@ async function signOut() {
           <UiButton
             type="submit"
             variant="secondary"
-            :disabled="passwordState.saving"
+            :loading="passwordState.saving"
           >
             Şifreyi değiştir
           </UiButton>

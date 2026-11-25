@@ -11,7 +11,7 @@ export async function register(page: Page, { name = 'Ayşe Demir', email = uniqu
   await page.goto('/kayit')
   await page.getByLabel('Ad soyad').fill(name)
   await page.getByLabel('E-posta').fill(email)
-  await page.getByLabel('Şifre').fill(PASSWORD)
+  await page.getByLabel('Şifre', { exact: true }).fill(PASSWORD)
   await page.getByRole('button', { name: 'Kayıt ol' }).click()
   return email
 }

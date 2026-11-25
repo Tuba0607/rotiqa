@@ -28,11 +28,11 @@ test('wrong password shows a Turkish message; correct one signs in; sign-out end
 
   await page.goto('/giris')
   await page.getByLabel('E-posta').fill(email)
-  await page.getByLabel('Şifre').fill('yanlis-parola')
+  await page.getByLabel('Şifre', { exact: true }).fill('yanlis-parola')
   await page.getByRole('button', { name: 'Giriş yap' }).click()
   await expect(page.getByRole('alert')).toHaveText('E-posta veya şifre hatalı.')
 
-  await page.getByLabel('Şifre').fill(PASSWORD)
+  await page.getByLabel('Şifre', { exact: true }).fill(PASSWORD)
   await page.getByRole('button', { name: 'Giriş yap' }).click()
   await expect(page).toHaveURL(/\/baslangic$/)
 
@@ -47,8 +47,27 @@ test('wrong password shows a Turkish message; correct one signs in; sign-out end
 test('registration validates fields', async ({ page }) => {
   await page.goto('/kayit')
   await page.getByLabel('E-posta').fill(uniqueEmail())
-  await page.getByLabel('Şifre').fill('kisa')
+  await page.getByLabel('Şifre', { exact: true }).fill('kisa')
   await page.getByRole('button', { name: 'Kayıt ol' }).click()
   await expect(page.getByText('Adınızı girin.')).toBeVisible()
   await expect(page.getByText('Şifre en az 8 karakter olmalı.')).toBeVisible()
+  // Focus moves to the first invalid field so its error is announced.
+  await expect(page.getByLabel('Ad soyad')).toBeFocused()
+  await expect(page.getByLabel('Ad soyad')).toHaveAttribute('aria-invalid', 'true')
+})
+
+test('password visibility can be toggled accessibly', async ({ page }) => {
+  await page.goto('/giris')
+  const password = page.getByLabel('Şifre', { exact: true })
+  await password.fill('gizli-parola')
+  await expect(password).toHaveAttribute('type', 'password')
+
+  const toggle = page.getByRole('button', { name: 'Şifreyi göster' })
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+  await toggle.click()
+  await expect(password).toHaveAttribute('type', 'text')
+  await expect(page.getByRole('button', { name: 'Şifreyi gizle' })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: 'Şifreyi gizle' }).click()
+  await expect(password).toHaveAttribute('type', 'password')
+  await expect(password).toHaveValue('gizli-parola')
 })

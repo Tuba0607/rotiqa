@@ -26,12 +26,14 @@ const form = reactive({ name: '', locationName: '', timezone: 'Europe/Istanbul' 
 const errors = ref<Record<string, string>>({})
 const error = ref('')
 const submitting = ref(false)
+const formEl = ref<HTMLFormElement>()
 
 async function submit() {
   error.value = ''
   const parsed = createOrganizationSchema.safeParse(form)
   if (!parsed.success) {
     errors.value = Object.fromEntries(parsed.error.issues.map(issue => [String(issue.path[0]), issue.message]))
+    focusFirstInvalid(formEl.value)
     return
   }
   errors.value = {}
@@ -66,6 +68,7 @@ async function submit() {
     </div>
 
     <form
+      ref="formEl"
       class="flex flex-col gap-4"
       novalidate
       @submit.prevent="submit"
@@ -98,9 +101,9 @@ async function submit() {
       <UiButton
         type="submit"
         size="lg"
-        :disabled="submitting"
+        :loading="submitting"
       >
-        {{ submitting ? 'Oluşturuluyor…' : 'İşletmeyi oluştur' }}
+        İşletmeyi oluştur
       </UiButton>
       <NuxtLink
         v-if="addingAnother"

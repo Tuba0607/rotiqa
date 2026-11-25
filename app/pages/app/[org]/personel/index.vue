@@ -80,9 +80,9 @@ async function move(index: number, delta: -1 | 1) {
       description="Personel kaydı için Rotiqa hesabı gerekmez."
     >
       <template #actions>
-        <NuxtLink :to="{ path: orgPath('/personel/yeni'), query: { sube: locationId } }">
-          <UiButton>Personel ekle</UiButton>
-        </NuxtLink>
+        <UiButton :to="{ path: orgPath('/personel/yeni'), query: { sube: locationId } }">
+          Personel ekle
+        </UiButton>
       </template>
     </UiPageHeader>
 
@@ -186,7 +186,7 @@ async function move(index: number, delta: -1 | 1) {
         <UiButton
           v-else
           variant="ghost"
-          :disabled="busyId === employee.id"
+          :loading="busyId === employee.id"
           @click="setArchived(employee, false)"
         >
           Geri al

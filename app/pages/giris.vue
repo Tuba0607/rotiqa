@@ -69,9 +69,9 @@ async function submit() {
       <UiButton
         type="submit"
         size="lg"
-        :disabled="submitting"
+        :loading="submitting"
       >
-        {{ submitting ? 'Giriş yapılıyor…' : 'Giriş yap' }}
+        Giriş yap
       </UiButton>
     </form>
 

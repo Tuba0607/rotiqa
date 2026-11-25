@@ -15,7 +15,7 @@ test('onboarding, departments and the employee lifecycle', async ({ page }) => {
   // Employee
   await page.goto(`${basePath}/personel`)
   await expect(page.getByText('Bu şubede henüz personel yok')).toBeVisible()
-  await page.getByRole('button', { name: 'Personel ekle' }).click()
+  await page.getByRole('link', { name: 'Personel ekle' }).click()
   await page.getByLabel('Ad', { exact: true }).fill('Deniz')
   await page.getByLabel('Soyad').fill('Akın')
   await page.getByLabel('Departman').selectOption({ label: 'Salon' })
@@ -81,7 +81,7 @@ test('manager invitation is limited to the selected location', async ({ page, br
   await manager.getByRole('link', { name: 'Kayıt ol' }).click()
   await manager.getByLabel('Ad soyad').fill('Müdür Örnek')
   await manager.getByLabel('E-posta').fill(managerEmail)
-  await manager.getByLabel('Şifre').fill(PASSWORD)
+  await manager.getByLabel('Şifre', { exact: true }).fill(PASSWORD)
   await manager.getByRole('button', { name: 'Kayıt ol' }).click()
   await manager.getByRole('button', { name: 'Daveti kabul et' }).click()
   await expect(manager.getByText('Şube yöneticisi')).toBeVisible()

@@ -77,23 +77,19 @@ async function switchAccount() {
           Daveti kabul etmek için <strong>{{ invitation.email }}</strong> adresiyle giriş yapın veya kayıt olun.
         </p>
         <div class="flex flex-col gap-3">
-          <NuxtLink :to="{ path: '/kayit', query: { redirect: route.fullPath } }">
-            <UiButton
-              size="lg"
-              class="w-full"
-            >
-              Kayıt ol
-            </UiButton>
-          </NuxtLink>
-          <NuxtLink :to="{ path: '/giris', query: { redirect: route.fullPath } }">
-            <UiButton
-              size="lg"
-              variant="secondary"
-              class="w-full"
-            >
-              Giriş yap
-            </UiButton>
-          </NuxtLink>
+          <UiButton
+            size="lg"
+            :to="{ path: '/kayit', query: { redirect: route.fullPath } }"
+          >
+            Kayıt ol
+          </UiButton>
+          <UiButton
+            size="lg"
+            variant="secondary"
+            :to="{ path: '/giris', query: { redirect: route.fullPath } }"
+          >
+            Giriş yap
+          </UiButton>
         </div>
       </template>
 
@@ -118,10 +114,10 @@ async function switchAccount() {
         </UiAlert>
         <UiButton
           size="lg"
-          :disabled="accepting"
+          :loading="accepting"
           @click="accept"
         >
-          {{ accepting ? 'Kabul ediliyor…' : 'Daveti kabul et' }}
+          Daveti kabul et
         </UiButton>
       </template>
     </template>

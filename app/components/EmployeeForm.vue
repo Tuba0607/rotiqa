@@ -25,6 +25,7 @@ const form = reactive<EmployeeFormValue>({
 const errors = ref<Record<string, string>>({})
 const error = ref('')
 const submitting = ref(false)
+const formEl = ref<HTMLFormElement>()
 
 async function onSubmit() {
   error.value = ''
@@ -32,6 +33,7 @@ async function onSubmit() {
   const parsed = employeeSchema.safeParse(value)
   if (!parsed.success) {
     errors.value = Object.fromEntries(parsed.error.issues.map(issue => [String(issue.path[0]), issue.message]))
+    focusFirstInvalid(formEl.value)
     return
   }
   errors.value = {}
@@ -51,6 +53,7 @@ async function onSubmit() {
 
 <template>
   <form
+    ref="formEl"
     class="flex flex-col gap-4"
     novalidate
     @submit.prevent="onSubmit"
@@ -91,9 +94,9 @@ async function onSubmit() {
     <UiButton
       type="submit"
       size="lg"
-      :disabled="submitting"
+      :loading="submitting"
     >
-      {{ submitting ? 'Kaydediliyor…' : submitLabel }}
+      {{ submitLabel }}
     </UiButton>
   </form>
 </template>

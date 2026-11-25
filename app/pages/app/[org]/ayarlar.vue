@@ -71,7 +71,7 @@ async function save() {
           </p>
           <UiButton
             type="submit"
-            :disabled="state.saving"
+            :loading="state.saving"
           >
             Kaydet
           </UiButton>
