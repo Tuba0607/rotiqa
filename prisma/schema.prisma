@@ -33,10 +33,12 @@ model User {
   sessions             Session[]
   accounts             Account[]
   memberships          Membership[]
-  createdOrganizations Organization[] @relation("OrganizationCreatedBy")
-  sentInvitations      Invitation[]   @relation("InvitationInvitedBy")
-  acceptedInvitations  Invitation[]   @relation("InvitationAcceptedBy")
+  createdOrganizations Organization[]      @relation("OrganizationCreatedBy")
+  sentInvitations      Invitation[]        @relation("InvitationInvitedBy")
+  acceptedInvitations  Invitation[]        @relation("InvitationAcceptedBy")
   employeeProfiles     Employee[]
+  updatedAssignments   ShiftAssignment[]   @relation("ShiftAssignmentUpdatedBy")
+  scheduleChangeSets   ScheduleChangeSet[]
 
   @@map("users")
 }
@@ -113,6 +115,10 @@ model Organization {
   locationAccess      LocationAccess[]
   invitationLocations InvitationLocation[]
   auditLogs           AuditLog[]
+  shiftCodes          ShiftCode[]
+  scheduleWeeks       ScheduleWeek[]
+  shiftAssignments    ShiftAssignment[]
+  scheduleChangeSets  ScheduleChangeSet[]
 
   @@map("organizations")
 }
@@ -131,6 +137,7 @@ model Location {
   employees           Employee[]
   access              LocationAccess[]
   invitationLocations InvitationLocation[]
+  scheduleWeeks       ScheduleWeek[]
 
   @@unique([id, organizationId])
   @@unique([organizationId, name])
@@ -174,13 +181,13 @@ model LocationAccess {
 // ─── Staff ────────────────────────────────────────────────────────────────────
 
 model Department {
-  id             String  @id @default(uuid(7)) @db.Uuid
-  organizationId String  @map("organization_id") @db.Uuid
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
   name           String
   /// Hex color of the employee name column (defaults from shared/design/tokens.ts).
   color          String
-  sortOrder      Int     @default(0) @map("sort_order")
-  isActive       Boolean @default(true) @map("is_active")
+  sortOrder      Int      @default(0) @map("sort_order")
+  isActive       Boolean  @default(true) @map("is_active")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
@@ -210,14 +217,151 @@ model Employee {
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  location     Location     @relation(fields: [locationId, organizationId], references: [id, organizationId], onDelete: Restrict)
-  department   Department?  @relation(fields: [departmentId, organizationId], references: [id, organizationId], onDelete: Restrict)
-  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  location     Location          @relation(fields: [locationId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  department   Department?       @relation(fields: [departmentId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  user         User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  assignments  ShiftAssignment[]
 
+  @@unique([id, organizationId])
   @@unique([organizationId, userId])
   @@index([organizationId, locationId, isActive, sortOrder])
   @@map("employees")
+}
+
+// ─── Scheduling (F2) ──────────────────────────────────────────────────────────
+//
+// Times are minutes after local midnight (location time zone): 08:00 = 480.
+// endMinute ≤ startMinute means the shift ends on the next day (crosses midnight);
+// endMinute 1440 means "24:00". Planned work (ShiftAssignment) is kept separate from
+// future actual attendance (AttendanceRecord); both will key on (employeeId, workDate).
+
+enum ShiftCodeKind {
+  WORK
+  OFF
+  LEAVE
+  SICK
+}
+
+enum ScheduleStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum ScheduleChangeKind {
+  EDIT
+  COPY_WEEK
+  UNDO
+  REDO
+}
+
+/// Organization-wide shift codes (A, B, C, OFF, R, Y.İ, …). Deactivated, never deleted.
+model ShiftCode {
+  id             String        @id @default(uuid(7)) @db.Uuid
+  organizationId String        @map("organization_id") @db.Uuid
+  code           String
+  label          String
+  kind           ShiftCodeKind
+  startMinute    Int?          @map("start_minute")
+  endMinute      Int?          @map("end_minute")
+  breakMinutes   Int           @default(0) @map("break_minutes")
+  /// Hex cell color (defaults from shared/design/tokens.ts).
+  color          String
+  sortOrder      Int           @default(0) @map("sort_order")
+  isActive       Boolean       @default(true) @map("is_active")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  assignments  ShiftAssignment[]
+
+  @@unique([id, organizationId])
+  @@unique([organizationId, code])
+  @@map("shift_codes")
+}
+
+/// One planning week (Monday start) per location.
+model ScheduleWeek {
+  id             String         @id @default(uuid(7)) @db.Uuid
+  organizationId String         @map("organization_id") @db.Uuid
+  locationId     String         @map("location_id") @db.Uuid
+  weekStart      DateTime       @map("week_start") @db.Date
+  /// Always DRAFT until publishing ships in F4.
+  status         ScheduleStatus @default(DRAFT)
+  /// Incremented on every saved change; lets open editors detect remote updates.
+  version        Int            @default(0)
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  location     Location            @relation(fields: [locationId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  assignments  ShiftAssignment[]
+  changeSets   ScheduleChangeSet[]
+
+  @@unique([organizationId, locationId, weekStart])
+  @@map("schedule_weeks")
+}
+
+/// Planned work: at most one shift per employee per day. Code, label, kind, color and
+/// times are copied at assignment time so later edits to the code never rewrite history.
+model ShiftAssignment {
+  id             String        @id @default(uuid(7)) @db.Uuid
+  organizationId String        @map("organization_id") @db.Uuid
+  locationId     String        @map("location_id") @db.Uuid
+  weekStart      DateTime      @map("week_start") @db.Date
+  employeeId     String        @map("employee_id") @db.Uuid
+  workDate       DateTime      @map("work_date") @db.Date
+  shiftCodeId    String        @map("shift_code_id") @db.Uuid
+  codeSnapshot   String        @map("code_snapshot")
+  labelSnapshot  String        @map("label_snapshot")
+  kindSnapshot   ShiftCodeKind @map("kind_snapshot")
+  colorSnapshot  String        @map("color_snapshot")
+  startMinute    Int?          @map("start_minute")
+  endMinute      Int?          @map("end_minute")
+  breakMinutes   Int           @default(0) @map("break_minutes")
+  /// True when times were set for this day instead of taken from the shift code.
+  isCustomTime   Boolean       @default(false) @map("is_custom_time")
+  /// Internal note; never shown on shared images.
+  note           String?
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  updatedById    String?       @map("updated_by_id")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  week         ScheduleWeek @relation(fields: [organizationId, locationId, weekStart], references: [organizationId, locationId, weekStart], onDelete: Restrict)
+  employee     Employee     @relation(fields: [employeeId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  shiftCode    ShiftCode    @relation(fields: [shiftCodeId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  updatedBy    User?        @relation("ShiftAssignmentUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@unique([employeeId, workDate])
+  @@index([organizationId, locationId, weekStart])
+  @@map("shift_assignments")
+}
+
+/// Append-only log of saved edits (autosave batches, week copies, undo/redo). Powers
+/// conflict-safe undo, idempotent retries (clientMutationId) and change history.
+model ScheduleChangeSet {
+  id               String             @id @default(uuid(7)) @db.Uuid
+  organizationId   String             @map("organization_id") @db.Uuid
+  locationId       String             @map("location_id") @db.Uuid
+  weekStart        DateTime           @map("week_start") @db.Date
+  actorUserId      String?            @map("actor_user_id")
+  /// Client-generated id; a retried request with the same id is applied only once.
+  clientMutationId String             @map("client_mutation_id") @db.Uuid
+  kind             ScheduleChangeKind
+  /// For UNDO/REDO: the change set being reverted or re-applied.
+  revertsId        String?            @map("reverts_id") @db.Uuid
+  /// [{ employeeId, workDate, before, after }] — before/after are cell values or null.
+  changes          Json
+  createdAt        DateTime           @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  week         ScheduleWeek @relation(fields: [organizationId, locationId, weekStart], references: [organizationId, locationId, weekStart], onDelete: Restrict)
+  actor        User?        @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, clientMutationId])
+  @@index([organizationId, locationId, weekStart, createdAt])
+  @@map("schedule_change_sets")
 }
 
 // ─── Invitations ──────────────────────────────────────────────────────────────

@@ -19,6 +19,7 @@ describe('runtime database role', () => {
     expect(rows.map(r => r.relname)).toEqual([
       'audit_logs', 'departments', 'employees', 'invitation_locations', 'invitations',
       'location_access', 'locations', 'memberships', 'organizations',
+      'schedule_change_sets', 'schedule_weeks', 'shift_assignments', 'shift_codes',
     ])
   })
 
@@ -46,6 +47,20 @@ describe('runtime database role', () => {
       { table_name: 'sessions', privileges: 'DELETE,INSERT,SELECT,UPDATE' },
       { table_name: 'users', privileges: 'INSERT,SELECT,UPDATE' },
       { table_name: 'verifications', privileges: 'DELETE,INSERT,SELECT,UPDATE' },
+    ])
+  })
+
+  it('has least-privilege grants on scheduling tables (no DDL, append-only change sets)', async () => {
+    const { rows } = await ownerPool.query(`
+      SELECT table_name, string_agg(privilege_type, ',' ORDER BY privilege_type) AS privileges
+      FROM information_schema.role_table_grants
+      WHERE grantee = 'rotiqa_app' AND table_name IN ('shift_codes', 'schedule_weeks', 'shift_assignments', 'schedule_change_sets')
+      GROUP BY table_name ORDER BY table_name`)
+    expect(rows).toEqual([
+      { table_name: 'schedule_change_sets', privileges: 'INSERT,SELECT' },
+      { table_name: 'schedule_weeks', privileges: 'INSERT,SELECT,UPDATE' },
+      { table_name: 'shift_assignments', privileges: 'DELETE,INSERT,SELECT,UPDATE' },
+      { table_name: 'shift_codes', privileges: 'INSERT,SELECT,UPDATE' },
     ])
   })
 

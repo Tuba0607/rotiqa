@@ -24,6 +24,17 @@ describe('onboarding', () => {
     expect(await listMyOrganizations(appPrisma, user.id)).toEqual([{ id: org.id, name: 'Kordon Bistro', slug: 'kordon-bistro', role: 'OWNER' }])
   })
 
+  it('gives a new organization the starter shift codes without hours', async () => {
+    const org = await createOrganization(appPrisma, user.id, { name: 'Kordon Bistro', locationName: 'Alsancak' })
+    const codes = await runInOrganization(appPrisma, user.id, org.slug, ctx => ctx.tx.shiftCode.findMany({
+      orderBy: { sortOrder: 'asc' },
+      select: { code: true, label: true, kind: true, color: true, startMinute: true, endMinute: true, isActive: true },
+    }))
+    expect(codes.map(c => c.code)).toEqual(['A', 'B', 'C', 'OFF', 'R', 'Y.İ'])
+    expect(codes.every(c => c.startMinute === null && c.endMinute === null && c.isActive)).toBe(true)
+    expect(codes.find(c => c.code === 'R')).toMatchObject({ kind: 'SICK', color: '#DC3545' })
+  })
+
   it('is atomic: a failure after the organization insert leaves nothing behind', async () => {
     await expect(withTenant(appPrisma, { userId: user.id }, async (tx) => {
       const org = await tx.organization.create({ data: { name: 'Yarım', slug: 'yarim', createdById: user.id } })

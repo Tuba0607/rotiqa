@@ -52,3 +52,47 @@ export async function seedTwoTenants(): Promise<TwoTenants> {
   await ownerPool.query(`INSERT INTO location_access (membership_id, location_id, organization_id, created_at) VALUES ($1, $2, $3, now())`, [managerMembershipId, a.locations[0], a.orgId])
   return { a, b, managerA, managerMembershipId }
 }
+
+export const WEEK = '2026-11-23' // a Monday
+
+export interface TenantSchedule {
+  workCodeId: string
+  offCodeId: string
+  /** Assignment ids for employees[0] (location 0) and employees[1] (location 1), on WEEK. */
+  assignments: [string, string]
+}
+
+async function seedTenantSchedule(t: TenantFixture): Promise<TenantSchedule> {
+  const workCodeId = randomUUID()
+  const offCodeId = randomUUID()
+  await ownerPool.query(
+    `INSERT INTO shift_codes (id, organization_id, code, label, kind, start_minute, end_minute, color, sort_order, created_at, updated_at)
+     VALUES ($1, $3, 'A', 'Sabah', 'WORK', 480, 960, '#8EDFE3', 0, now(), now()),
+            ($2, $3, 'OFF', 'Haftalık izin', 'OFF', NULL, NULL, '#F8E4E4', 1, now(), now())`,
+    [workCodeId, offCodeId, t.orgId],
+  )
+  const assignments: [string, string] = [randomUUID(), randomUUID()]
+  for (const [i, locationId] of t.locations.entries()) {
+    await ownerPool.query(
+      `INSERT INTO schedule_weeks (id, organization_id, location_id, week_start, created_at, updated_at) VALUES ($1, $2, $3, $4, now(), now())`,
+      [randomUUID(), t.orgId, locationId, WEEK],
+    )
+    await ownerPool.query(
+      `INSERT INTO shift_assignments (id, organization_id, location_id, week_start, employee_id, work_date, shift_code_id,
+         code_snapshot, label_snapshot, kind_snapshot, color_snapshot, start_minute, end_minute, created_at, updated_at, updated_by_id)
+       VALUES ($1, $2, $3, $4, $5, $4, $6, 'A', 'Sabah', 'WORK', '#8EDFE3', 480, 960, now(), now(), $7)`,
+      [assignments[i], t.orgId, locationId, WEEK, t.employees[i], workCodeId, t.owner.id],
+    )
+    await ownerPool.query(
+      `INSERT INTO schedule_change_sets (id, organization_id, location_id, week_start, actor_user_id, client_mutation_id, kind, changes, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, 'EDIT', '[]', now())`,
+      [randomUUID(), t.orgId, locationId, WEEK, t.owner.id, randomUUID()],
+    )
+  }
+  return { workCodeId, offCodeId, assignments }
+}
+
+/** Shift codes, a week, one assignment and one change set per location, for both tenants. */
+export async function seedSchedules(t: TwoTenants): Promise<{ a: TenantSchedule, b: TenantSchedule }> {
+  return { a: await seedTenantSchedule(t.a), b: await seedTenantSchedule(t.b) }
+}

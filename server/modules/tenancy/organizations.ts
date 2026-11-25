@@ -2,6 +2,7 @@ import type { PrismaClient } from '../../generated/prisma/client'
 import { createOrganizationSchema, updateOrganizationSchema } from '../../../shared/schemas/tenancy'
 import { slugify } from '../../../shared/utils/slug'
 import { recordAudit } from '../audit/audit'
+import { createDefaultShiftCodes } from '../scheduling/shift-codes'
 import { AppError, isUniqueViolation } from '../errors'
 import type { OrgContext } from './access'
 import { requireOwner } from './access'
@@ -62,6 +63,7 @@ export async function createOrganization(prisma: PrismaClient, userId: string, r
           data: { organizationId: organization.id, name: input.locationName, timezone: input.timezone },
           select: { id: true },
         })
+        await createDefaultShiftCodes(tx, organization.id)
         await recordAudit(tx, { organizationId: organization.id, actorUserId: userId, action: 'organization.created', entityType: 'organization', entityId: organization.id, metadata: { firstLocationId: location.id } })
         return { ...organization, role: 'OWNER' as const }
       })

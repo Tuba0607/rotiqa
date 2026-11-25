@@ -14,6 +14,7 @@ export const appPool = new pg.Pool({ connectionString: appUrl, max: 4 })
 export const appPrisma: PrismaClient = createPrismaClient(appUrl)
 
 const TABLES = [
+  'schedule_change_sets', 'shift_assignments', 'schedule_weeks', 'shift_codes',
   'audit_logs', 'invitation_locations', 'invitations', 'employees', 'departments',
   'location_access', 'memberships', 'locations', 'organizations',
   'sessions', 'accounts', 'verifications', 'users',
