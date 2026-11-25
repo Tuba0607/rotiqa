@@ -1,8 +1,12 @@
 import 'dotenv/config'
+import { randomBytes } from 'node:crypto'
 import { defineConfig, devices } from '@playwright/test'
 
 const PORT = 3100
 const isCI = !!process.env.CI
+// The production build refuses placeholder secrets, so e2e generates a strong one per run
+// (unless CI already provides one).
+process.env.E2E_AUTH_SECRET ??= process.env.CI && process.env.BETTER_AUTH_SECRET ? process.env.BETTER_AUTH_SECRET : randomBytes(32).toString('base64')
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -27,7 +31,7 @@ export default defineConfig({
     env: {
       PORT: String(PORT),
       DATABASE_URL: process.env.TEST_DATABASE_URL ?? '',
-      BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? '',
+      BETTER_AUTH_SECRET: process.env.E2E_AUTH_SECRET,
       BETTER_AUTH_URL: `http://localhost:${PORT}`,
       // Many sign-ups from one IP within seconds; the limiter itself stays on in production.
       AUTH_RATE_LIMIT: 'off',

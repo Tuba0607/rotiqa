@@ -2,15 +2,18 @@ import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import type { H3Event } from 'h3'
 import { AppError } from '../modules/errors'
+import { assertAuthSecret } from '../modules/security/auth-secret'
 import { usePrisma } from './db'
 
 function createAuth() {
   const secret = process.env.BETTER_AUTH_SECRET
-  if (!secret || secret.length < 32) throw new Error('BETTER_AUTH_SECRET must be set (at least 32 characters)')
+  // Also checked at server start (server/plugins/auth-secret.ts); repeated here so no code path
+  // can create the auth instance with an unusable secret.
+  assertAuthSecret(secret, { production: process.env.NODE_ENV === 'production' })
 
   return betterAuth({
     appName: 'Rotiqa',
-    secret,
+    secret: secret!,
     baseURL: process.env.BETTER_AUTH_URL,
     database: prismaAdapter(usePrisma(), { provider: 'postgresql' }),
     emailAndPassword: {
