@@ -1,0 +1,13 @@
+// Rotiqa database schema.
+// Domain models (Organization, Location, Membership, Employee, ShiftCode, ScheduleWeek, ...)
+// are introduced in F1 together with Row Level Security policies.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../server/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
