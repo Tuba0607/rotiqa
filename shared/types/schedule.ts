@@ -14,8 +14,14 @@ export interface ShiftCodeDefinition {
   /** "HH:mm" local time; null for non-working codes. Configured per organization, never hard-coded. */
   startTime: string | null
   endTime: string | null
-  /** Hex background color of the cell. */
+  /** Hex cell color. Defaults from design tokens; organizations may override. */
   color: string
-  /** Hex text color, chosen for contrast against `color`. */
+  /** Hex text color, derived with `readableTextColor(color)`. */
   textColor: string
+}
+
+export interface DepartmentDisplay {
+  name: string
+  /** Hex color of the employee name column. Defaults from design tokens; organizations may override. */
+  color: string
 }

@@ -23,16 +23,16 @@ function pngSize(png: Buffer) {
 describe('schedule image template', () => {
   it('includes every employee, the organization and the week range', () => {
     const text = collectText(buildScheduleTemplate(SAMPLE_SCHEDULE_IMAGE))
-    for (const row of SAMPLE_SCHEDULE_IMAGE.rows) expect(text).toContain(row.employeeName)
-    expect(text).toContain('Kordon Bistro')
-    expect(text).toContain('23–29 Kasım 2026')
+    for (const row of SAMPLE_SCHEDULE_IMAGE.rows) expect(text).toContain(row.employeeName.toLocaleUpperCase('tr-TR'))
+    expect(text).toContain('KORDON BİSTRO')
+    expect(text.some(line => line.includes('23–29 Kasım 2026'))).toBe(true)
   })
 
   it('hides medical report codes when masking is on', () => {
     const text = collectText(buildScheduleTemplate({ ...SAMPLE_SCHEDULE_IMAGE, maskSensitiveCodes: true }))
     expect(text).not.toContain('R')
     expect(text).not.toContain('Raporlu')
-    expect(text).toContain('İzinli')
+    expect(text).toContain('İZİNLİ')
   })
 
   it('shows medical report codes when masking is off', () => {
@@ -41,16 +41,18 @@ describe('schedule image template', () => {
     expect(text).toContain('Raporlu')
   })
 
-  it('counts only working shifts per day', () => {
-    const text = collectText(buildScheduleTemplate({
-      ...SAMPLE_SCHEDULE_IMAGE,
-      rows: [
-        { employeeName: 'X', department: 'D', codes: ['A', 'OFF', 'R', null, 'B', 'C', 'Y.İ'] },
-        { employeeName: 'Y', department: 'D', codes: ['C', 'A', 'OFF', null, 'B', 'OFF', 'A'] },
-      ],
-    }))
-    const countsStart = text.indexOf('Çalışan sayısı')
-    expect(text.slice(countsStart + 1, countsStart + 8)).toEqual(['2', '1', '0', '0', '2', '1', '1'])
+  it('colors the name column by department and lists departments in the legend', () => {
+    const template = buildScheduleTemplate({ ...SAMPLE_SCHEDULE_IMAGE, departments: [{ name: 'Salon', color: '#112233' }] })
+    const json = JSON.stringify(template)
+    expect(json).toContain('#112233') // organization override
+    expect(json).toContain('#24466F') // Mutfak was not configured → default palette color
+    expect(collectText(template)).toEqual(expect.arrayContaining(['Salon', 'Mutfak']))
+  })
+
+  it('uppercases names with Turkish rules', () => {
+    const text = collectText(buildScheduleTemplate(SAMPLE_SCHEDULE_IMAGE))
+    expect(text).toContain('İREM ŞAHİN')
+    expect(text).toContain('ILGIN ER')
   })
 })
 
@@ -69,9 +71,9 @@ describe('renderSchedulePng', () => {
     const png = await renderSchedulePng(SAMPLE_SCHEDULE_IMAGE, await loadFonts())
 
     expect(png.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]))
-    const { width, height } = pngSize(png)
+    const { width } = pngSize(png)
     expect(width).toBe(IMAGE_WIDTH * IMAGE_SCALE)
-    expect(height).toBeGreaterThan(width) // tall enough to include every row
+    expect(width).toBe(1800)
   })
 
   it('grows with the number of employees', async () => {

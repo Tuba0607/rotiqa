@@ -27,6 +27,31 @@
   --color-accent-500: #F59E0B;
   --color-accent-700: #B45309;
 
+  /*
+   * Schedule colors — mirror shared/design/tokens.ts (kept in sync by tests/unit/design-tokens.test.ts).
+   * These are defaults; organizations can override shift and department colors, which the
+   * UI then applies inline from data.
+   */
+  --color-shift-a: #8EDFE3;
+  --color-shift-b: #F8CE67;
+  --color-shift-c: #E77B66;
+  --color-shift-off: #F8E4E4;
+  --color-shift-r: #DC3545;
+  --color-shift-yi: #DCCAF5;
+
+  --color-dept-1: #60427E;
+  --color-dept-2: #24466F;
+  --color-dept-3: #1E5F5A;
+  --color-dept-4: #7A4419;
+  --color-dept-5: #5A3350;
+  --color-dept-6: #3A4A5C;
+
+  --color-sheet-frame: #1F4A57;
+  --color-sheet-grid: #0A1628;
+  --color-sheet-day: #13294B;
+  --color-sheet-weekday: #F59E0B;
+  --color-sheet-weekend: #286573;
+
   --radius-card: 1rem;
   --shadow-card: 0 1px 2px rgb(10 22 40 / 0.04), 0 4px 16px rgb(10 22 40 / 0.06);
 

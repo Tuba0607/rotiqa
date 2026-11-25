@@ -1,24 +1,34 @@
-import type { ShiftCodeDefinition } from '../types/schedule'
+import { DEPARTMENT_COLORS, SHIFT_COLORS } from '../design/tokens'
+import type { ShiftCodeDefinition, ShiftCodeKind } from '../types/schedule'
+import { readableTextColor } from './color'
+
+function starter(code: keyof typeof SHIFT_COLORS, label: string, kind: ShiftCodeKind): ShiftCodeDefinition {
+  const color = SHIFT_COLORS[code]
+  return { code, label, kind, startTime: null, endTime: null, color, textColor: readableTextColor(color) }
+}
 
 /**
  * Starter codes copied into a new organization. Hours are intentionally empty:
- * each business defines its own A/B/C times in settings.
+ * each business defines its own A/B/C times (and may recolor codes) in settings.
  */
 export const DEFAULT_SHIFT_CODES: readonly ShiftCodeDefinition[] = [
-  { code: 'A', label: 'Sabah vardiyası', kind: 'WORK', startTime: null, endTime: null, color: '#CCFBF1', textColor: '#115E59' },
-  { code: 'B', label: 'Ara vardiya', kind: 'WORK', startTime: null, endTime: null, color: '#FEF3C7', textColor: '#92400E' },
-  { code: 'C', label: 'Akşam vardiyası', kind: 'WORK', startTime: null, endTime: null, color: '#DBEAFE', textColor: '#1E3A8A' },
-  { code: 'OFF', label: 'Haftalık izin', kind: 'OFF', startTime: null, endTime: null, color: '#E5E7EB', textColor: '#374151' },
-  { code: 'R', label: 'Raporlu', kind: 'SICK', startTime: null, endTime: null, color: '#FFE4E6', textColor: '#9F1239' },
-  { code: 'Y.İ', label: 'Yıllık izin', kind: 'LEAVE', startTime: null, endTime: null, color: '#EDE9FE', textColor: '#5B21B6' },
+  starter('A', 'Sabah', 'WORK'),
+  starter('B', 'Ara', 'WORK'),
+  starter('C', 'Akşam', 'WORK'),
+  starter('OFF', 'Haftalık izin', 'OFF'),
+  starter('R', 'Raporlu', 'SICK'),
+  starter('Y.İ', 'Yıllık izin', 'LEAVE'),
 ]
 
-/** Neutral presentation used when sensitive (SICK) codes are masked in shared outputs. */
+/**
+ * Neutral presentation used when sensitive (SICK) codes are masked in shared outputs.
+ * Shares the day-off color so it does not stand out as a distinct category.
+ */
 export const MASKED_LEAVE_DISPLAY = {
-  code: 'İzinli',
+  code: 'İZİNLİ',
   label: 'İzinli',
-  color: '#F1F5F9',
-  textColor: '#475569',
+  color: SHIFT_COLORS.OFF,
+  textColor: readableTextColor(SHIFT_COLORS.OFF),
 } as const
 
 export interface ShiftCodeDisplay {
@@ -36,4 +46,9 @@ export function toSharedDisplay(def: ShiftCodeDefinition, maskSensitive: boolean
 
 export function formatShiftHours(def: Pick<ShiftCodeDefinition, 'startTime' | 'endTime'>): string | null {
   return def.startTime && def.endTime ? `${def.startTime}–${def.endTime}` : null
+}
+
+/** Default color for the n-th department (0-based); cycles through the palette. */
+export function defaultDepartmentColor(index: number): string {
+  return DEPARTMENT_COLORS[((index % DEPARTMENT_COLORS.length) + DEPARTMENT_COLORS.length) % DEPARTMENT_COLORS.length]!
 }

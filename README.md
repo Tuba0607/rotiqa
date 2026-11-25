@@ -7,7 +7,7 @@ Rotiqa is a shift scheduling, timesheet and staff management SaaS for businesses
 > **Status:** early development (phase F0 — foundation). Not production-ready yet. See the [roadmap](#roadmap).
 
 <p align="center">
-  <img src="docs/images/schedule-image-sample.png" alt="Weekly schedule image generated from data (sample business, fictional staff)" width="560">
+  <img src="docs/images/schedule-image-sample.png" alt="Weekly schedule image generated from data (sample business, fictional staff)" width="640">
   <br>
   <sub>Schedule image rendered server-side from data with Satori + resvg. Business and staff are fictional.</sub>
 </p>
@@ -17,9 +17,9 @@ Rotiqa is a shift scheduling, timesheet and staff management SaaS for businesses
 Planned for the first release (✅ = available today):
 
 - **Weekly shift planner** — Excel-like grid, Monday → Sunday, tap to assign, paint mode, copy previous week, autosave, undo, daily headcounts, department grouping, draft vs. published plans.
-- **Configurable shift codes** — each business defines its own codes, hours and colors. Starter set: `A`, `B`, `C`, `OFF`, `R`, `Y.İ`.
+- **Configurable shift codes** — each business defines its own codes, hours and colors. Starter set: `A`, `B`, `C`, `OFF`, `R`, `Y.İ`. Departments get their own colors too; text color is picked automatically for legibility (WCAG AA).
 - **Staff management** — departments, ordering, active/archived staff, per-location staff. Archiving never rewrites past schedules.
-- ✅ **WhatsApp-ready schedule image (prototype)** — a high-resolution PNG rendered from data (not a screenshot), including every employee, the week range, color-coded shifts, a legend and daily headcounts. Medical leave (`R`) is shown as a generic *"İzinli"* by default to avoid exposing health data.
+- ✅ **WhatsApp-ready schedule image (prototype)** — an 1800 px PNG rendered from data (not a screenshot): every employee, the week range, color-coded shifts, department-colored names and a legend. Medical leave (`R`) is shown as a generic *"İzinli"* by default to avoid exposing health data.
 - **Publication history** — every shared version is kept.
 - **Multi-tenant** — organizations, locations, `OWNER` / `MANAGER` roles with per-location permissions, strict data isolation.
 - **Timesheets (later)** — clock-in/out records, planned vs. actual hours, overtime, reports and exports.
@@ -44,7 +44,7 @@ One Nuxt application, organized as a **modular monolith**. Business logic lives 
 
 ```
 app/                     Vue front end (pages, components, design tokens)
-  assets/css/main.css    Design tokens (Tailwind @theme)
+  assets/css/main.css    Tailwind tokens (mirror shared/design/tokens.ts)
   components/ui/         Base UI components (UiButton, UiShiftCell, …)
 server/
   api/                   HTTP handlers only
@@ -53,6 +53,7 @@ server/
   utils/db.ts            Prisma client factory
   assets/fonts/          Fonts bundled for server-side rendering (SIL OFL)
 shared/                  Types and pure helpers used by both app and server
+  design/tokens.ts       Color tokens shared by the UI and the PNG renderer
 prisma/                  Schema and migrations
 tests/
   unit/                  Pure TS tests (Node)

@@ -8,7 +8,7 @@ test('home page shows the product tagline', async ({ page }) => {
 
 test('design system renders all default shift codes', async ({ page }) => {
   await page.goto('/design-system')
-  for (const label of ['Sabah vardiyası', 'Ara vardiya', 'Akşam vardiyası', 'Haftalık izin', 'Raporlu', 'Yıllık izin']) {
+  for (const label of ['Sabah', 'Ara', 'Akşam', 'Haftalık izin', 'Raporlu', 'Yıllık izin']) {
     await expect(page.getByText(label, { exact: true })).toBeVisible()
   }
 })

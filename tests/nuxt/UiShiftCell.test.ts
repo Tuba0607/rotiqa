@@ -5,11 +5,11 @@ import UiShiftCell from '~/components/ui/UiShiftCell.vue'
 describe('UiShiftCell', () => {
   it('renders the shift code with its colors and accessible label', async () => {
     const wrapper = await mountSuspended(UiShiftCell, {
-      props: { shift: { code: 'A', label: 'Sabah vardiyası', color: '#CCFBF1', textColor: '#115E59' } },
+      props: { shift: { code: 'A', label: 'Sabah', color: '#8EDFE3', textColor: '#0A1628' } },
     })
     const button = wrapper.get('button')
     expect(button.text()).toBe('A')
-    expect(button.attributes('aria-label')).toBe('Sabah vardiyası')
+    expect(button.attributes('aria-label')).toBe('Sabah')
     expect(button.attributes('style')).toContain('background-color')
   })
 
