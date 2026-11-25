@@ -22,6 +22,7 @@
     "db:down": "docker compose down",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
+    "db:seed:dev": "jiti scripts/seed-dev.ts",
     "db:studio": "prisma studio",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
@@ -52,6 +53,7 @@
     "dotenv": "^18.0.10",
     "eslint": "10.15.0",
     "happy-dom": "21.0.4",
+    "jiti": "2.7.0",
     "playwright-core": "1.65.1",
     "prisma": "7.10.1",
     "tailwindcss": "4.3.5",

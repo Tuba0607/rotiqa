@@ -44,7 +44,7 @@ export default defineNuxtConfig({
     strict: true,
     // Type-check every test suite, not only the Nuxt component tests.
     nodeTsConfig: {
-      include: ['../tests/unit/**/*', '../tests/integration/**/*', '../tests/e2e/**/*'],
+      include: ['../tests/unit/**/*', '../tests/integration/**/*', '../tests/e2e/**/*', '../scripts/**/*'],
     },
   },
 
