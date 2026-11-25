@@ -1,6 +1,13 @@
 // Rotiqa database schema.
-// Domain models (Organization, Location, Membership, Employee, ShiftCode, ScheduleWeek, ...)
-// are introduced in F1 together with Row Level Security policies.
+//
+// Conventions
+// - Tables and columns are snake_case in PostgreSQL (@@map / @map), camelCase in TypeScript.
+// - Every tenant-owned table carries `organization_id`; Row Level Security policies
+//   (see prisma/migrations/*_row_level_security) filter on it.
+// - Cross-table references inside a tenant use composite foreign keys
+//   (id + organization_id) so a row can never point into another organization.
+// - Employees and locations are archived, never hard-deleted, to keep future
+//   schedule and timesheet history intact (FKs use onDelete: Restrict).
 
 generator client {
   provider     = "prisma-client"
@@ -10,4 +17,263 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ─── Better Auth (managed by Better Auth; not tenant-owned, no RLS) ────────────
+
+model User {
+  id            String   @id
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false) @map("email_verified")
+  image         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  sessions             Session[]
+  accounts             Account[]
+  memberships          Membership[]
+  createdOrganizations Organization[] @relation("OrganizationCreatedBy")
+  sentInvitations      Invitation[]   @relation("InvitationInvitedBy")
+  acceptedInvitations  Invitation[]   @relation("InvitationAcceptedBy")
+  employeeProfiles     Employee[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime @map("expires_at")
+  token     String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+// ─── Tenancy ──────────────────────────────────────────────────────────────────
+
+enum MembershipRole {
+  OWNER
+  MANAGER
+}
+
+model Organization {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  name        String
+  slug        String   @unique
+  /// Creator; lets RLS show the row to its creator before the OWNER membership exists.
+  createdById String   @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  createdBy           User                 @relation("OrganizationCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  locations           Location[]
+  memberships         Membership[]
+  departments         Department[]
+  employees           Employee[]
+  invitations         Invitation[]
+  locationAccess      LocationAccess[]
+  invitationLocations InvitationLocation[]
+  auditLogs           AuditLog[]
+
+  @@map("organizations")
+}
+
+model Location {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  name           String
+  /// IANA time zone; schedules and timesheets compute local work days with it.
+  timezone       String   @default("Europe/Istanbul")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  employees           Employee[]
+  access              LocationAccess[]
+  invitationLocations InvitationLocation[]
+
+  @@unique([id, organizationId])
+  @@unique([organizationId, name])
+  @@map("locations")
+}
+
+model Membership {
+  id             String         @id @default(uuid(7)) @db.Uuid
+  userId         String         @map("user_id")
+  organizationId String         @map("organization_id") @db.Uuid
+  role           MembershipRole
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  locationAccess LocationAccess[]
+
+  @@unique([id, organizationId])
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@map("memberships")
+}
+
+/// Locations a MANAGER may access. OWNERs implicitly access every location.
+model LocationAccess {
+  membershipId   String   @map("membership_id") @db.Uuid
+  locationId     String   @map("location_id") @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  membership   Membership   @relation(fields: [membershipId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  location     Location     @relation(fields: [locationId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@id([membershipId, locationId])
+  @@index([organizationId, locationId])
+  @@map("location_access")
+}
+
+// ─── Staff ────────────────────────────────────────────────────────────────────
+
+model Department {
+  id             String  @id @default(uuid(7)) @db.Uuid
+  organizationId String  @map("organization_id") @db.Uuid
+  name           String
+  /// Hex color of the employee name column (defaults from shared/design/tokens.ts).
+  color          String
+  sortOrder      Int     @default(0) @map("sort_order")
+  isActive       Boolean @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  employees    Employee[]
+
+  @@unique([id, organizationId])
+  @@unique([organizationId, name])
+  @@map("departments")
+}
+
+/// A person on the schedule. Does not need a Rotiqa login; `userId` links an account later.
+/// Employees are archived (isActive = false), never deleted, so planned shifts (ShiftAssignment)
+/// and actual attendance (AttendanceRecord) can reference them indefinitely.
+model Employee {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  /// Home location. Multi-location staffing can be added later via a separate relation.
+  locationId     String    @map("location_id") @db.Uuid
+  departmentId   String?   @map("department_id") @db.Uuid
+  userId         String?   @map("user_id")
+  firstName      String    @map("first_name")
+  lastName       String    @map("last_name")
+  isActive       Boolean   @default(true) @map("is_active")
+  archivedAt     DateTime? @map("archived_at")
+  sortOrder      Int       @default(0) @map("sort_order")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  location     Location     @relation(fields: [locationId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  department   Department?  @relation(fields: [departmentId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, userId])
+  @@index([organizationId, locationId, isActive, sortOrder])
+  @@map("employees")
+}
+
+// ─── Invitations ──────────────────────────────────────────────────────────────
+
+model Invitation {
+  id             String         @id @default(uuid(7)) @db.Uuid
+  organizationId String         @map("organization_id") @db.Uuid
+  /// Lower-cased; must match the accepting user's email.
+  email          String
+  role           MembershipRole @default(MANAGER)
+  /// SHA-256 of the secret token. The token itself is shown once and never stored.
+  tokenHash      String         @unique @map("token_hash")
+  expiresAt      DateTime       @map("expires_at")
+  invitedById    String         @map("invited_by_id")
+  acceptedAt     DateTime?      @map("accepted_at")
+  acceptedById   String?        @map("accepted_by_id")
+  revokedAt      DateTime?      @map("revoked_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  invitedBy    User                 @relation("InvitationInvitedBy", fields: [invitedById], references: [id], onDelete: Restrict)
+  acceptedBy   User?                @relation("InvitationAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
+  locations    InvitationLocation[]
+
+  @@unique([id, organizationId])
+  @@index([organizationId, createdAt])
+  @@map("invitations")
+}
+
+model InvitationLocation {
+  invitationId   String @map("invitation_id") @db.Uuid
+  locationId     String @map("location_id") @db.Uuid
+  organizationId String @map("organization_id") @db.Uuid
+
+  invitation   Invitation   @relation(fields: [invitationId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  location     Location     @relation(fields: [locationId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@id([invitationId, locationId])
+  @@map("invitation_locations")
+}
+
+// ─── Audit ────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  actorUserId    String?  @map("actor_user_id")
+  action         String
+  entityType     String   @map("entity_type")
+  entityId       String?  @map("entity_id")
+  metadata       Json?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, createdAt])
+  @@map("audit_logs")
 }

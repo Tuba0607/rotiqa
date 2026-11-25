@@ -19,6 +19,16 @@ export default defineNuxtConfig({
   },
 
   css: ['~/assets/css/main.css'],
+
+  // Authenticated areas render on the client; the landing page stays server-rendered.
+  routeRules: {
+    '/app/**': { ssr: false },
+    '/giris': { ssr: false },
+    '/kayit': { ssr: false },
+    '/hesap': { ssr: false },
+    '/baslangic': { ssr: false },
+    '/davet/**': { ssr: false },
+  },
   compatibilityDate: '2026-11-25',
 
   nitro: {
@@ -32,6 +42,10 @@ export default defineNuxtConfig({
 
   typescript: {
     strict: true,
+    // Type-check every test suite, not only the Nuxt component tests.
+    nodeTsConfig: {
+      include: ['../tests/unit/**/*', '../tests/integration/**/*', '../tests/e2e/**/*'],
+    },
   },
 
   eslint: {

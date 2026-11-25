@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -16,7 +17,7 @@ jobs:
   check:
     name: Lint, typecheck, test, build, e2e
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     services:
       postgres:
@@ -24,18 +25,21 @@ jobs:
         env:
           POSTGRES_USER: rotiqa
           POSTGRES_PASSWORD: rotiqa
-          POSTGRES_DB: rotiqa
+          POSTGRES_DB: rotiqa_test
         ports:
           - 5436:5432
         options: >-
-          --health-cmd "pg_isready -U rotiqa -d rotiqa"
+          --health-cmd "pg_isready -U rotiqa -d rotiqa_test"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10
 
     env:
-      # CI-only throwaway database; not a secret.
-      DATABASE_URL: postgresql://rotiqa:rotiqa@localhost:5436/rotiqa?schema=public
+      # CI-only throwaway database credentials; not secrets.
+      TEST_MIGRATION_DATABASE_URL: postgresql://rotiqa:rotiqa@localhost:5436/rotiqa_test
+      TEST_DATABASE_URL: postgresql://rotiqa_app:rotiqa_app_ci@localhost:5436/rotiqa_test
+      MIGRATION_DATABASE_URL: postgresql://rotiqa:rotiqa@localhost:5436/rotiqa_test
+      DATABASE_URL: postgresql://rotiqa_app:rotiqa_app_ci@localhost:5436/rotiqa_test
 
     steps:
       - uses: actions/checkout@v7
@@ -47,6 +51,17 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
 
+      - name: Create runtime database role (no superuser, no BYPASSRLS)
+        env:
+          PGPASSWORD: rotiqa
+        run: |
+          psql -h localhost -p 5436 -U rotiqa -d rotiqa_test -v ON_ERROR_STOP=1 \
+            -c "CREATE ROLE rotiqa_app LOGIN PASSWORD 'rotiqa_app_ci' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS" \
+            -c "GRANT CONNECT ON DATABASE rotiqa_test TO rotiqa_app"
+
+      - name: Generate an ephemeral auth secret
+        run: echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -56,7 +71,7 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Unit & component tests
+      - name: Unit, component and integration tests (RLS against the runtime role)
         run: pnpm test
 
       - name: Build

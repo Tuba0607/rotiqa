@@ -8,8 +8,9 @@ export function createPrismaClient(connectionString: string): PrismaClient {
 const globalForPrisma = globalThis as unknown as { __rotiqaPrisma?: PrismaClient }
 
 /**
- * Shared client for the application database. Created lazily so builds and tests
- * never need a database connection. The demo database gets its own client (F6).
+ * Shared client for the application database, connected as the restricted runtime role
+ * (`rotiqa_app`). Tenant data is only reachable inside `withTenant()`; see
+ * server/modules/tenancy/context.ts. Created lazily so builds never need a database.
  */
 export function usePrisma(): PrismaClient {
   if (!globalForPrisma.__rotiqaPrisma) {

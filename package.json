@@ -31,6 +31,7 @@
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
     "@resvg/resvg-js": "2.6.2",
+    "better-auth": "1.7.28",
     "nuxt": "4.7.0",
     "pg": "^8.23.1",
     "pinia": "4.1.0",
