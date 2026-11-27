@@ -7,6 +7,8 @@ defineProps<{
   options: { value: string, label: string }[]
   error?: string
   placeholder?: string
+  /** Extra label classes, e.g. 'max-sm:sr-only' to keep the label for screen readers only on phones. */
+  labelClass?: string
 }>()
 
 const id = useId()
@@ -17,6 +19,7 @@ const id = useId()
     <label
       :for="id"
       class="text-sm font-semibold text-navy-950"
+      :class="labelClass"
     >{{ label }}</label>
     <select
       :id="id"

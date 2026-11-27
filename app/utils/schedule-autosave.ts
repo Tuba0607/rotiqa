@@ -3,7 +3,7 @@ import type { CellValue, ScheduleSaveResult } from '../../shared/types/schedule'
 import { cellKey } from '../../shared/utils/schedule-cells'
 
 /**
- * Autosave queue for the weekly planner (UI-independent; wired to the planner store later).
+ * Autosave queue for the weekly planner (UI-independent; used by app/composables/useScheduleEditor.ts).
  *
  * - Debounces edits and sends them as one batch per request.
  * - Coalesces repeated edits of the same cell: the last value wins, the first `expected` is kept.

@@ -78,10 +78,9 @@ async function onSubmit() {
         :error="errors.lastName"
       />
     </div>
-    <UiSelect
+    <LocationPicker
       v-model="form.locationId"
-      label="Şube"
-      :options="locations.map(l => ({ value: l.id, label: l.name }))"
+      :locations="locations"
       :error="errors.locationId"
     />
     <UiSelect

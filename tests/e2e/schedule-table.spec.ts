@@ -63,20 +63,24 @@ test('shows the week grouped by department with daily totals and week navigation
   const empty = page.getByTestId('total-empty').getByRole('cell')
   await expect(working).toHaveText(['2', '0', '0', '0', '0', '0', '1'])
   await expect(empty).toHaveText(['0', '3', '4', '4', '4', '4', '3'])
-  await expect(page.getByTestId('schedule-summary')).toHaveText('4 personel · 6 vardiya · 22 boş hücre')
+  // 4 staff × 7 days = 28 cells; 6 filled, of which only A, C and B are working shifts.
+  await expect(page.getByTestId('schedule-summary')).toHaveText('4 personel · 6/28 hücre dolu · 3 çalışma vardiyası · 22 boş hücre')
   await expect(page.getByText('Taslak')).toBeVisible()
 
-  // Read-only: no editable cells or buttons inside the table.
-  await expect(table.getByRole('button')).toHaveCount(0)
+  // Every cell of the four active staff is an edit button (F2.4); one tab stop for the grid.
+  await expect(table.getByRole('button')).toHaveCount(4 * 7)
+  await expect(table.locator('button[tabindex="0"]')).toHaveCount(1)
 
   // Next week is empty: table stays, with a notice.
-  await page.getByRole('button', { name: 'Sonraki hafta' }).click()
+  await page.getByRole('button', { name: 'Sonraki hafta', exact: true }).click()
   await expect(page.getByTestId('week-label')).toHaveText('30 Kasım – 6 Aralık 2026')
   await expect(page).toHaveURL(/hafta=2026-11-30/)
-  await expect(page.getByText('Bu hafta için henüz vardiya planlanmamış.')).toBeVisible()
+  // Empty week: a short note in the stats line on phones, the full notice on larger screens.
+  if (isMobile) await expect(page.getByText('· Plan boş')).toBeVisible()
+  else await expect(page.getByText('Bu hafta için henüz vardiya planlanmamış.')).toBeVisible()
   await expect(page.getByTestId('total-working').getByRole('cell')).toHaveText(Array(7).fill('0'))
-  await page.getByRole('button', { name: 'Önceki hafta' }).click()
-  await expect(page.getByTestId('schedule-summary')).toContainText('6 vardiya')
+  await page.getByRole('button', { name: 'Önceki hafta', exact: true }).click()
+  await expect(page.getByTestId('schedule-summary')).toContainText('6/28 hücre dolu')
 
   // "Bu hafta" jumps back from any other week (a week in the past, so the test does not depend on today).
   await page.goto(`${basePath}/vardiya?hafta=2020-01-08`)
@@ -97,6 +101,17 @@ test('shows the week grouped by department with daily totals and week navigation
       const before = (await name.boundingBox())!.x
       await scroller.evaluate(el => el.scrollTo({ left: 400 }))
       expect(Math.abs((await name.boundingBox())!.x - before)).toBeLessThanOrEqual(2)
+      // After any scroll, a day column starts right after the name column: none is half hidden.
+      for (const left of [30, 70, 9999, 0]) {
+        await scroller.evaluate((el, x) => el.scrollTo({ left: x, behavior: 'instant' }), left)
+        await page.waitForTimeout(150)
+        const edges = await page.evaluate(() => {
+          const nameRight = document.querySelector('[data-testid="schedule-row"] th')!.getBoundingClientRect().right
+          const firstDay = [...document.querySelectorAll('[data-testid^="day-"]')].map(th => th.getBoundingClientRect()).find(r => r.right > nameRight + 4)!
+          return { nameRight, dayLeft: firstDay.left }
+        })
+        expect(Math.abs(edges.dayLeft - (edges.nameRight + 2))).toBeLessThanOrEqual(1.5)
+      }
       // Readable on phones: the week does not get squeezed in; cells stay ≥ 44px, codes 14px, names 12px.
       expect(await scroller.evaluate(el => el.scrollWidth > el.clientWidth)).toBe(true)
       const firstCell = defne.getByRole('cell').first()

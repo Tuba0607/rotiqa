@@ -87,11 +87,10 @@ async function move(index: number, delta: -1 | 1) {
     </UiPageHeader>
 
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
-      <UiSelect
+      <LocationPicker
         v-model="locationId"
-        label="Şube"
         class="sm:w-64"
-        :options="activeLocations.map(l => ({ value: l.id, label: l.name }))"
+        :locations="activeLocations"
       />
       <div
         class="flex rounded-xl bg-cream-200 p-1"

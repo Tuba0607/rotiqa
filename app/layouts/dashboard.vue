@@ -68,6 +68,8 @@ const isActive = (item: { to: string, exact?: boolean }) => item.exact ? route.p
       <slot v-else />
     </main>
 
+    <UiToaster />
+
     <nav
       class="fixed inset-x-0 bottom-0 z-20 border-t border-cream-300 bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
       aria-label="Ana menü"

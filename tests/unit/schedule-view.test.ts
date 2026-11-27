@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cellHours, dayTotals, describeCell, groupSchedule, legendCodes, parseWeekParam } from '../../app/utils/schedule-view'
+import { cellHours, dayTotals, describeCell, groupSchedule, legendCodes, parseWeekParam, weekSummary } from '../../app/utils/schedule-view'
 import type { ScheduleCell, ScheduleDepartment, ScheduleEmployee, ScheduleShiftCode } from '../../shared/types/schedule'
 import { weekDays } from '../../shared/utils/week'
 
@@ -70,6 +70,8 @@ describe('working counts', () => {
     })
     expect(groups.map(g => g.working[0])).toEqual([1, 0])
     expect(dayTotals(groups)[0]).toEqual({ working: 1, off: 3, empty: 1 })
+    // 5 staff × 7 days; 4 filled, only 1 of them a working shift.
+    expect(weekSummary(groups)).toEqual({ staff: 5, cells: 35, filled: 4, working: 1, empty: 31 })
   })
 })
 

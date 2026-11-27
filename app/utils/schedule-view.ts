@@ -72,6 +72,34 @@ export function dayTotals(groups: ScheduleGroup[], dayCount = 7): DayTotals[] {
   return totals
 }
 
+export interface WeekSummary {
+  staff: number
+  /** Staff rows × days. */
+  cells: number
+  /** Cells holding any code (working or not). */
+  filled: number
+  /** Working shifts only (kind WORK); OFF, R and Y.İ are not counted. */
+  working: number
+  empty: number
+}
+
+/** Week totals for the summary line, computed from the grouped rows. */
+export function weekSummary(groups: ScheduleGroup[]): WeekSummary {
+  const summary = { staff: 0, cells: 0, filled: 0, working: 0, empty: 0 }
+  for (const row of groups.flatMap(g => g.rows)) {
+    summary.staff++
+    for (const cell of row.cells) {
+      summary.cells++
+      if (!cell) summary.empty++
+      else {
+        summary.filled++
+        if (cell.kind === 'WORK') summary.working++
+      }
+    }
+  }
+  return summary
+}
+
 /** "HH:mm" from minutes after midnight. */
 export function formatMinute(minute: number): string {
   return `${String(Math.floor(minute / 60) % 24).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`

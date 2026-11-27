@@ -99,7 +99,9 @@ test('manager invitation is limited to the selected location', async ({ page, br
   await manager.goto(`${basePath}/personel`)
   await expect(manager.getByRole('link', { name: /Mert Örnek/ })).toBeVisible()
   await expect(manager.getByRole('link', { name: /Ece Örnek/ })).toHaveCount(0)
-  await expect(manager.getByLabel('Şube').locator('option')).toHaveText(['Bornova'])
+  // A single assigned branch is shown as text, not as a dropdown with one option.
+  await expect(manager.getByTestId('fixed-location')).toHaveText(/Bornova/)
+  await expect(manager.getByRole('combobox', { name: 'Şube' })).toHaveCount(0)
   await manager.goto(`${basePath}/departmanlar`)
   await expect(manager.getByText('Departmanları yalnızca Owner düzenleyebilir.')).toBeVisible()
   await expect(manager.getByRole('button', { name: 'Departman ekle' })).toHaveCount(0)
