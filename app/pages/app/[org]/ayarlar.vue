@@ -79,6 +79,17 @@ async function save() {
       </UiCard>
 
       <NuxtLink
+        :to="`/app/${slug}/departmanlar`"
+        class="flex min-h-touch items-center justify-between rounded-card bg-white p-4 shadow-card md:hidden"
+      >
+        <span>
+          <span class="block font-semibold">Departmanlar</span>
+          <span class="text-sm text-navy-500">Departman ekleyin, renklerini ve sırasını düzenleyin.</span>
+        </span>
+        <span aria-hidden="true">→</span>
+      </NuxtLink>
+
+      <NuxtLink
         :to="`/app/${slug}/davetler`"
         class="flex min-h-touch items-center justify-between rounded-card bg-white p-4 shadow-card"
       >

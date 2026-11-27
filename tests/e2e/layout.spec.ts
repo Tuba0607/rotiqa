@@ -21,7 +21,7 @@ test('public pages have no horizontal overflow', async ({ page }) => {
 
 test('app pages have no horizontal overflow', async ({ page }) => {
   const { basePath } = await registerWithOrganization(page, 'Taşma Kontrol Lokantası Uzun İsimli İşletme')
-  for (const path of ['', '/personel', '/personel/yeni', '/departmanlar', '/subeler', '/davetler', '/ayarlar']) {
+  for (const path of ['', '/vardiya', '/personel', '/personel/yeni', '/departmanlar', '/subeler', '/davetler', '/ayarlar']) {
     await expectNoHorizontalOverflow(page, basePath + path)
   }
   await expectNoHorizontalOverflow(page, '/hesap')

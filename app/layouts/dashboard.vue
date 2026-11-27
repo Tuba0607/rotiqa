@@ -5,19 +5,21 @@ const route = useRoute()
 
 const nav = computed(() => [
   { to: orgPath(), label: 'Pano', short: 'Pano', exact: true },
+  { to: orgPath('/vardiya'), label: 'Vardiya', short: 'Vardiya' },
   { to: orgPath('/personel'), label: 'Personel', short: 'Personel' },
-  { to: orgPath('/departmanlar'), label: 'Departmanlar', short: 'Departman' },
+  // Owners reach departments from the settings page on phones (five tabs at most).
+  { to: orgPath('/departmanlar'), label: 'Departmanlar', short: 'Departman', desktopOnly: isOwner.value },
   { to: orgPath('/subeler'), label: 'Şubeler', short: 'Şube' },
   ...(isOwner.value ? [{ to: orgPath('/davetler'), label: 'Davetler', short: 'Davet', desktopOnly: true }, { to: orgPath('/ayarlar'), label: 'Ayarlar', short: 'Ayarlar' }] : []),
 ])
-// Phones get at most five tabs; invitations are reachable from the settings page there.
+// Phones get at most five tabs; invitations and (for owners) departments are linked from the settings page.
 const mobileNav = computed(() => nav.value.filter(item => !item.desktopOnly))
 
 const isActive = (item: { to: string, exact?: boolean }) => item.exact ? route.path === item.to : route.path.startsWith(item.to)
 </script>
 
 <template>
-  <div class="flex min-h-dvh flex-col bg-cream-100 pb-20 md:pb-0">
+  <div class="flex min-h-dvh flex-col bg-cream-100 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
     <header class="sticky top-0 z-20 bg-navy-950 text-white">
       <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2">
         <NuxtLink
