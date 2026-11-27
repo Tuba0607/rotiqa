@@ -30,3 +30,28 @@ export function defaultShiftCodeRows(organizationId: string) {
 export async function createDefaultShiftCodes(tx: TenantTx, organizationId: string): Promise<void> {
   await tx.shiftCode.createMany({ data: defaultShiftCodeRows(organizationId) })
 }
+
+const shiftCodeSelect = {
+  id: true,
+  code: true,
+  label: true,
+  kind: true,
+  color: true,
+  startMinute: true,
+  endMinute: true,
+  breakMinutes: true,
+  sortOrder: true,
+  isActive: true,
+} as const
+
+/** Shift codes of the organization (members read; RLS). Inactive codes only when asked. */
+export function listShiftCodes(tx: TenantTx, organizationId: string, options: { includeInactive?: boolean, alsoIds?: string[] } = {}) {
+  return tx.shiftCode.findMany({
+    where: {
+      organizationId,
+      ...(options.includeInactive ? {} : { OR: [{ isActive: true }, { id: { in: options.alsoIds ?? [] } }] }),
+    },
+    orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }],
+    select: shiftCodeSelect,
+  })
+}

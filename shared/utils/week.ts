@@ -61,3 +61,24 @@ export function formatWeekRange(weekStart: string, locale = 'tr-TR'): string {
   }
   return `${first.getUTCDate()}–${fmt({ day: 'numeric', month: 'long', year: 'numeric' }).format(last)}`
 }
+
+export function isMonday(isoDate: string): boolean {
+  return startOfWeek(isoDate) === isoDate
+}
+
+/** The calendar date "now" in an IANA time zone, as YYYY-MM-DD. */
+export function todayIn(timeZone: string, now: Date = new Date()): string {
+  // en-CA formats as YYYY-MM-DD.
+  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+}
+
+/** Monday of the current week for a location's time zone. */
+export function currentWeekStart(timeZone: string, now: Date = new Date()): string {
+  return startOfWeek(todayIn(timeZone, now))
+}
+
+export function addDays(isoDate: string, days: number): string {
+  const date = parseIsoDate(isoDate)
+  date.setUTCDate(date.getUTCDate() + days)
+  return toIsoDate(date)
+}
