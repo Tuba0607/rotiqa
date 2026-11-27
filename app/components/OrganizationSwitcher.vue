@@ -11,10 +11,11 @@ function onChange(event: Event) {
 </script>
 
 <template>
-  <label class="relative flex min-w-0 items-center">
+  <label class="flex min-w-0 items-center">
     <span class="sr-only">İşletme seç</span>
+    <!-- Header-sized variant of the shared select: same chevron, compact height, thin focus ring. -->
     <select
-      class="min-h-touch max-w-[12rem] appearance-none truncate rounded-xl bg-navy-900 py-2 pr-8 pl-3 text-sm font-semibold text-white sm:max-w-xs"
+      class="ui-select ui-select-inverse h-10 max-w-[11rem] min-w-0 cursor-pointer truncate rounded-lg border border-white/10 bg-navy-900 pr-9 pl-3 text-sm font-semibold text-white transition-[border-color,box-shadow] hover:border-white/25 focus:outline-none focus-visible:border-brand-500 focus-visible:ring-2 focus-visible:ring-brand-500/30 sm:max-w-xs md:h-9"
       :value="current?.slug"
       @change="onChange"
     >
@@ -29,9 +30,5 @@ function onChange(event: Event) {
         + Yeni işletme ekle
       </option>
     </select>
-    <span
-      class="pointer-events-none absolute right-3 text-xs text-white/70"
-      aria-hidden="true"
-    >▾</span>
   </label>
 </template>

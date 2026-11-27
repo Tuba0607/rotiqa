@@ -22,7 +22,7 @@ const id = useId()
       :id="id"
       v-model="model"
       v-bind="$attrs"
-      :class="fieldClasses(!!error)"
+      :class="selectClasses(!!error)"
       :aria-invalid="error ? true : undefined"
       :aria-describedby="error ? `${id}-error` : undefined"
     >

@@ -73,3 +73,37 @@
     @apply outline-2 outline-offset-2 outline-brand-500;
   }
 }
+
+/*
+ * Native <select> with one shared chevron, identical in Chrome, Safari and Firefox.
+ * The browser arrow is removed (appearance: none) and the chevron is painted as a background
+ * image, so it always sits inside the select's own box whatever width a page gives it.
+ * Padding is set by utilities (see app/utils/field-classes.ts): the chevron needs 16px plus
+ * room on the right. Keyboard and screen-reader behaviour stay those of the native control.
+ */
+@layer components {
+  .ui-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235B7096' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1rem 1rem;
+    text-overflow: ellipsis;
+  }
+
+  /* On dark surfaces (header). Compact: 12px from the edge, matching the left padding. */
+  .ui-select-inverse {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-opacity='0.7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right 0.75rem center;
+  }
+
+  /* Windows high contrast hides background images: fall back to the system arrow. */
+  @media (forced-colors: active) {
+    .ui-select {
+      appearance: auto;
+      -webkit-appearance: auto;
+      background-image: none;
+    }
+  }
+}

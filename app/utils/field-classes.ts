@@ -14,6 +14,11 @@ export function fieldClasses(invalid: boolean): string[] {
 }
 
 /** Moves focus to the first invalid field after a failed submit (screen readers announce its error). */
+/** Select fields: the same look plus the shared chevron (.ui-select) and room for it on the right. */
+export function selectClasses(invalid: boolean): string[] {
+  return [...fieldClasses(invalid), 'ui-select cursor-pointer pr-11 truncate']
+}
+
 export function focusFirstInvalid(root: HTMLElement | null | undefined): void {
   nextTick(() => root?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus())
 }
