@@ -98,6 +98,81 @@
     background-position: right 0.75rem center;
   }
 
+  /*
+   * Desktop list position. macOS draws the native select menu so that the *selected* option
+   * sits on top of the control, so the list can open upwards over the label; CSS cannot change
+   * that menu. Browsers with customizable select (appearance: base-select) render the list in
+   * the page instead, anchored to the control: below it, as wide as it, flipped up only when
+   * there is no room. It is still the native <select> (same keyboard, form and screen-reader
+   * behaviour). Touch devices keep the system picker; older browsers keep the native menu.
+   */
+  @supports (appearance: base-select) {
+    @media (hover: hover) and (pointer: fine) and (forced-colors: none) {
+      .ui-select,
+      .ui-select::picker(select) {
+        appearance: base-select;
+      }
+
+      .ui-select {
+        /* base-select lays the selected text out itself: keep it vertically centred. */
+        display: flex;
+        align-items: center;
+
+        /* The shared chevron is the background image; hide the built-in picker icon. */
+        &::picker-icon {
+          display: none;
+        }
+      }
+
+      .ui-select::picker(select) {
+        position-area: block-end span-inline-end;
+        position-try-fallbacks: flip-block;
+        margin-block: 0.25rem;
+        min-inline-size: anchor-size(self-inline);
+        max-block-size: min(20rem, 60dvh);
+        padding: 0.25rem;
+        border: 1px solid var(--color-cream-300);
+        border-radius: 0.75rem;
+        background: white;
+        color: var(--color-navy-950);
+        box-shadow: var(--shadow-card);
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      .ui-select option {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-block-size: 2.5rem;
+        padding-inline: 0.75rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+
+        &::checkmark {
+          order: 1;
+          margin-inline-start: auto;
+          color: var(--color-brand-700);
+        }
+
+        &:hover,
+        &:focus-visible {
+          background: var(--color-cream-100);
+          outline: none;
+        }
+
+        &:focus-visible {
+          box-shadow: inset 0 0 0 2px var(--color-brand-500);
+        }
+
+        &:checked {
+          font-weight: 600;
+          color: var(--color-brand-700);
+        }
+      }
+    }
+  }
+
   /* Windows high contrast hides background images: fall back to the system arrow. */
   @media (forced-colors: active) {
     .ui-select {
