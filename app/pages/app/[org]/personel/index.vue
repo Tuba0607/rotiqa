@@ -153,11 +153,13 @@ async function move(index: number, delta: -1 | 1) {
         />
         <NuxtLink
           :to="orgPath(`/personel/${employee.id}`)"
-          class="flex min-h-touch min-w-0 flex-1 flex-col justify-center gap-0.5 rounded-lg md:flex-row md:items-center md:justify-start md:gap-3"
+          class="flex min-h-touch min-w-0 flex-1 flex-col justify-center gap-0.5 rounded-lg md:grid md:grid-cols-[minmax(0,14rem)_auto] md:items-center md:justify-start md:gap-3"
         >
+          <!-- Desktop: fixed name column so department tags line up whatever the name length. -->
           <span class="truncate font-semibold">{{ employee.firstName }} {{ employee.lastName }}</span>
           <span
             v-if="employee.department"
+            data-testid="department-tag"
             class="w-fit shrink-0 rounded px-1.5 text-xs leading-5 font-semibold"
             :style="{ backgroundColor: employee.department.color, color: readableTextColor(employee.department.color) }"
           >{{ employee.department.name }}</span>

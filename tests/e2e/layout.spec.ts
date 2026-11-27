@@ -72,3 +72,26 @@ test('employee sort buttons are aligned, 44px and compact on desktop', async ({ 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   expect(overflow).toBeLessThanOrEqual(0)
 })
+
+test('department tags start on one vertical line whatever the name length', async ({ page, isMobile }) => {
+  const { basePath } = await registerWithOrganization(page, 'Etiket Hizası')
+  const slug = basePath.split('/').pop()!
+  const api = `/api/orgs/${slug}`
+  const locationId: string = (await (await page.request.get(api)).json()).locations[0].id
+  const departments = await Promise.all(['Salon', 'Mutfak', 'Bar'].map(async name => (await (await page.request.post(`${api}/departments`, { data: { name } })).json()).id as string))
+  const people = [['Ece', 'Su'], ['Defne', 'Aksoy'], ['Muhammed Mustafa', 'Karaosmanoğlu Yıldırımbeyazıt']]
+  for (const [i, [firstName, lastName]] of people.entries()) {
+    await page.request.post(`${api}/employees`, { data: { firstName, lastName, locationId, departmentId: departments[i] } })
+  }
+  await page.goto(`${basePath}/personel`)
+  const tags = page.getByTestId('department-tag')
+  await expect(tags).toHaveCount(3)
+  const lefts = await tags.evaluateAll(els => els.map(el => Math.round(el.getBoundingClientRect().left)))
+  expect(new Set(lefts).size).toBe(1)
+  if (!isMobile) {
+    // Close to the names: the name column is at most 14rem (224px) wide plus the 12px gap.
+    const nameLeft = await page.getByTestId('employee-row').first().getByRole('link').evaluate(el => el.getBoundingClientRect().left)
+    expect(lefts[0]! - nameLeft).toBeLessThanOrEqual(224 + 12 + 1)
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0)
+})
